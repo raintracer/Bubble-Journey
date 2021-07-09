@@ -16,9 +16,10 @@ public class PlayerController : MonoBehaviour
     public enum PlayerState { Idle, Run, Jumping, Falling, Dashing }
 
     const float Speed = 10f;
-    const float JumpSpeed = 20f;
-    const float DashPulseDelay = 0.25f;
-    const float DashStunDelay = 0.25f;
+    const float JumpSpeed = 30f;
+    const int DASH_PULSE_FRAMES   = 1;
+    const int DASH_STUN_FRAMES    = 5;
+    const float DASH_VELOCITY = 30;
     bool _JumpInputFlag = false;
     bool _DashInputFlag = false;
     bool _OnGroundFlag = false;
@@ -42,8 +43,6 @@ public class PlayerController : MonoBehaviour
         // Set starting state
         ChangeState(PlayerState.Idle);
     }
-
-
 
     void FixedUpdate()
     {
@@ -104,11 +103,45 @@ public class PlayerController : MonoBehaviour
             case PlayerState.Run:
             case PlayerState.Jumping:
             case PlayerState.Falling:
-                // Dash();
+                Dash();
                 return true;
             default:
                 return false;
         }
+    }
+
+    private void Dash()
+    {
+        SetYVelocityWithForce(JumpSpeed);
+        Coroutine DashRoutine;
+        DashRoutine = StartCoroutine(DashScript());
+    }
+
+    private IEnumerator DashScript()
+    {
+
+        // Determine Pulse Delay
+        float PulseTime = DASH_PULSE_FRAMES * Time.fixedDeltaTime;
+
+        // Time Pulse
+        Time.timeScale = 0;
+        yield return new WaitForSecondsRealtime(PulseTime);
+
+        // Continue Time, Apply constant velocity, remove gravity for duration
+        Time.timeScale = 1;
+        Physics2D.gravity = Vector2.zero;
+        RB.velocity = new Vector2(0, DASH_VELOCITY);
+        for (int i = 0; i < DASH_STUN_FRAMES; i++)
+        {
+            
+            yield return new WaitForFixedUpdate();
+        }
+        Physics2D.gravity = new Vector2(0, -9.8f);
+
+        // Reset velocity and set state to falling
+        RB.velocity = Vector2.zero;
+        ChangeState(PlayerState.Falling);
+
     }
 
     private bool RequestLand()
