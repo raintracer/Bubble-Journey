@@ -11,15 +11,20 @@ public class PlayerController : MonoBehaviour
     Rigidbody2D RB;
     SpriteRenderer SR;
     Animator ANIM;
-    PlayerState State;
+    
 
     public enum PlayerState { Idle, Run, Jumping, Falling, Dashing }
 
-    const float Speed = 10f;
-    const float JumpSpeed = 30f;
-    const int DASH_PULSE_FRAMES   = 1;
-    const int DASH_STUN_FRAMES    = 5;
-    const float DASH_VELOCITY = 30;
+    [SerializeField] float MOVE_SPEED;
+    [SerializeField] float JUMP_SPEED;
+    [SerializeField] int DASH_PULSE_FRAMES;
+    [SerializeField] int DASH_STUN_FRAMES;
+    [SerializeField] float DASH_VELOCITY;
+    [SerializeField] Vector2 OUTPUT_VELOCITY;
+    [SerializeField] PlayerState State;
+
+    float DefaultLinearDrag;
+
     bool _JumpInputFlag = false;
     bool _DashInputFlag = false;
     bool _OnGroundFlag = false;
@@ -32,6 +37,7 @@ public class PlayerController : MonoBehaviour
         ANIM = GO.GetComponent<Animator>();
         RB = GO.GetComponent<Rigidbody2D>();
         SR = GO.GetComponent<SpriteRenderer>();
+        DefaultLinearDrag = RB.drag;
 
         // Initialize Inputs
         Inputs = new PlayerInput();
@@ -42,6 +48,11 @@ public class PlayerController : MonoBehaviour
 
         // Set starting state
         ChangeState(PlayerState.Idle);
+    }
+
+    private void Update()
+    {
+        OUTPUT_VELOCITY = RB.velocity;
     }
 
     void FixedUpdate()
@@ -97,49 +108,66 @@ public class PlayerController : MonoBehaviour
 
     private bool RequestDash()
     {
+
+        // UnityEditor.EditorApplication.isPaused = true;
+
+        // Capture Movement Value
+        Vector2 DashMovement = Movement;
+
+        // Do not allow neutral dashing, leads to unknown physics shenanigans
+        if (DashMovement == Vector2.zero) return false;
+        
         switch (State)
         {
             case PlayerState.Idle:
             case PlayerState.Run:
             case PlayerState.Jumping:
             case PlayerState.Falling:
-                Dash();
+                Dash(DashMovement);
                 return true;
             default:
                 return false;
         }
     }
 
-    private void Dash()
+    private void Dash(Vector2 DashMovement)
     {
-        SetYVelocityWithForce(JumpSpeed);
+
+        // Determine Dash Vector
+        Vector2 DashVector;
+        DashVector = DashMovement.normalized * DASH_VELOCITY;
+
         Coroutine DashRoutine;
-        DashRoutine = StartCoroutine(DashScript());
+        DashRoutine = StartCoroutine(DashScript(DashVector));
     }
 
-    private IEnumerator DashScript()
+    private IEnumerator DashScript(Vector2 DashVector)
     {
 
         // Determine Pulse Delay
         float PulseTime = DASH_PULSE_FRAMES * Time.fixedDeltaTime;
 
-        // Time Pulse
+        // Time Pulse,
         Time.timeScale = 0;
         yield return new WaitForSecondsRealtime(PulseTime);
 
-        // Continue Time, Apply constant velocity, remove gravity for duration
+        // Continue Time, Apply constant velocity, remove gravity for duration, temporarily disable drag
+        RB.drag = 0f;
         Time.timeScale = 1;
+        SetXVelocityWithForce(DashVector.x);
+        SetYVelocityWithForce(DashVector.y);
         Physics2D.gravity = Vector2.zero;
-        RB.velocity = new Vector2(0, DASH_VELOCITY);
         for (int i = 0; i < DASH_STUN_FRAMES; i++)
         {
             
             yield return new WaitForFixedUpdate();
         }
-        Physics2D.gravity = new Vector2(0, -9.8f);
 
-        // Reset velocity and set state to falling
-        RB.velocity = Vector2.zero;
+        // Set state to falling, resume drag and gravity
+        Physics2D.gravity = new Vector2(0, -9.8f);
+        RB.drag = DefaultLinearDrag;
+        SetXVelocityWithForce(0);
+        SetYVelocityWithForce(0);
         ChangeState(PlayerState.Falling);
 
     }
@@ -148,9 +176,6 @@ public class PlayerController : MonoBehaviour
     {
         switch (State)
         {
-            case PlayerState.Idle:
-            case PlayerState.Run:
-            case PlayerState.Jumping:
             case PlayerState.Falling:
                 return true;
             default:
@@ -186,12 +211,17 @@ public class PlayerController : MonoBehaviour
 
     void Jump()
     {
-        SetYVelocityWithForce(JumpSpeed);
+        SetYVelocityWithForce(JUMP_SPEED);
         // ANIM.SetTrigger("JumpStartTrigger");
     }
 
     void Move()
     {
+        // Check for Move Invoked While Dashing
+        //if (State == PlayerState.Dashing)
+        //{
+            Debug.Log("Move invoked.");
+        //}
         if (State == PlayerState.Idle)
         {
             ChangeState(PlayerState.Run);
@@ -199,12 +229,12 @@ public class PlayerController : MonoBehaviour
         
         if (Movement.x > 0)
         {
-            SetXVelocityWithForce(Speed);
+            SetXVelocityWithForce(MOVE_SPEED);
             SR.flipX = false;
         }
         else if (Movement.x < 0)
         {
-            SetXVelocityWithForce(-Speed);
+            SetXVelocityWithForce(-MOVE_SPEED);
             SR.flipX = true;
         }
     }
@@ -216,7 +246,7 @@ public class PlayerController : MonoBehaviour
         SR.color = Colors[(int)State];
     }
 
-    private void OnCollisionEnter2D(Collision2D collision)
+    private void OnCollisionStay2D(Collision2D collision)
     {
         _OnGroundFlag = true;
     }
