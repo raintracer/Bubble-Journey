@@ -79,9 +79,13 @@ public class PlayerController : MonoBehaviour
         if (Movement.x != 0)
         {
             RequestMove();
-        }
+        } 
         else
         {
+            if (State != PlayerState.Dashing)
+            {
+                SetXVelocityWithForce(0f);
+            }
             if (State == PlayerState.Run) ChangeState(PlayerState.Idle);
         }
 
@@ -243,7 +247,7 @@ public class PlayerController : MonoBehaviour
     {
         State = _State;
         Color[] Colors = { Color.cyan, Color.blue, Color.green, Color.red, Color.yellow};
-        SR.color = Colors[(int)State];
+        // SR.color = Colors[(int)State];
     }
 
     private void OnCollisionStay2D(Collision2D collision)
