@@ -68,7 +68,7 @@ public class PlayerController : MonoBehaviour
 
     private void Start()
     {
-        AddBubble();
+        // AddBubble();
     }
 
     private void Update()

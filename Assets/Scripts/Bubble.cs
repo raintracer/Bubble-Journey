@@ -12,7 +12,6 @@ public class Bubble : MonoBehaviour
     private float Thickness = 0.05f;
     public float radius;
     [SerializeField] public bool Free = true;
-    [SerializeField] bool FinalBubble = false;
     Color ActiveColor;
     Vector2 SpawnPoint;
     bool _Respawning = false;
@@ -20,6 +19,10 @@ public class Bubble : MonoBehaviour
     const int UNATTACH_TRAVEL_FRAMES = 20;
     const int UNATTACH_DELAY_FRAMES = 10;
 
+    public enum BubbleType { Jump, Land, Dash, Bounce, Win}
+    [SerializeField] BubbleType Type = BubbleType.Jump;
+
+    static Color[] ActiveColors = { Color.cyan, Color.red, Color.yellow, Color.green, Color.magenta };
 
     void Awake()
     {
@@ -31,16 +34,7 @@ public class Bubble : MonoBehaviour
         LR = GO.GetComponent<LineRenderer>();
         LR.positionCount = SEGMENT_COUNT + 2;
         LR.useWorldSpace = false;
-        if (FinalBubble)
-        {
-            ActiveColor = Color.magenta;
-            
-        }
-        else
-        {
-            ActiveColor = Color.cyan;
-        }
-
+        ActiveColor = ActiveColors[(int)Type];
         LR.startColor = ActiveColor;
         LR.endColor = ActiveColor;
 
@@ -52,7 +46,28 @@ public class Bubble : MonoBehaviour
 
         Free = true;
         SetRadius(RADIUS_FREE);
+        UpdateColorByActive(true);
 
+    }
+
+    public void SetBubbleType(BubbleType _Type)
+    {
+        Type = _Type;
+        ActiveColor = ActiveColors[(int)Type];
+    }
+
+    public void UpdateColorByActive(bool Active)
+    {
+        if (Active)
+        {
+            LR.startColor = ActiveColor;
+            LR.endColor = ActiveColor;
+        }
+        else
+        {
+            LR.startColor = Color.grey;
+            LR.endColor = Color.grey;
+        }
     }
 
     public void SetRadius(float _Radius)
@@ -93,8 +108,7 @@ public class Bubble : MonoBehaviour
     private IEnumerator UnattachAnimation()
     {
         // Get darker
-        LR.startColor = Color.grey;
-        LR.endColor = Color.grey;
+        UpdateColorByActive(false);
 
         // Move towards spawn point and scale down radius smoothly over transition frames
         Vector3 StartPosition = gameObject.transform.position;
@@ -124,8 +138,7 @@ public class Bubble : MonoBehaviour
         BC.enabled = true;
 
         // Brighten
-        LR.startColor = ActiveColor;
-        LR.endColor = ActiveColor;
+        UpdateColorByActive(true);
 
     }
 
