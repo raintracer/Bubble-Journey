@@ -323,7 +323,7 @@ MonoBehaviour:
   MOVE_SPEED: 8
   JUMP_SPEED: 18
   DASH_PULSE_FRAMES: 1
-  DASH_STUN_FRAMES: 5
+  DASH_STUN_FRAMES: 8
   DASH_VELOCITY: 30
   OUTPUT_VELOCITY: {x: 0, y: 0}
   State: 0
@@ -662,11 +662,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4496314202895516371, guid: 7955a4bb27447cc4e8ca1f7e0803e946, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -10.64
+      value: -11.04
       objectReference: {fileID: 0}
     - target: {fileID: 4496314202895516371, guid: 7955a4bb27447cc4e8ca1f7e0803e946, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -3.17
+      value: -3.35
       objectReference: {fileID: 0}
     - target: {fileID: 4496314202895516371, guid: 7955a4bb27447cc4e8ca1f7e0803e946, type: 3}
       propertyPath: m_LocalPosition.z

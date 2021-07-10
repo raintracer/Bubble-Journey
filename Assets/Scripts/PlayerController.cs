@@ -5,16 +5,19 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
 
-    PlayerInput Inputs;
-    Vector2 Movement = Vector2.zero;
+    public enum PlayerState { Idle, Run, Jumping, Falling, Dashing, Dead }
+
+    // Unity Component Handles
     GameObject GO;
     Rigidbody2D RB;
     SpriteRenderer SR;
     Animator ANIM;
-    
+    BoxCollider2D BC;
 
-    public enum PlayerState { Idle, Run, Jumping, Falling, Dashing }
+    // Bubble Parameters
+    List<GameObject> Bubbles;
 
+    // Serialized Fields
     [SerializeField] float MOVE_SPEED;
     [SerializeField] float JUMP_SPEED;
     [SerializeField] int DASH_PULSE_FRAMES;
@@ -23,11 +26,19 @@ public class PlayerController : MonoBehaviour
     [SerializeField] Vector2 OUTPUT_VELOCITY;
     [SerializeField] PlayerState State;
 
-    float DefaultLinearDrag;
-
+    // Player Input Variables
     bool _JumpInputFlag = false;
     bool _DashInputFlag = false;
     bool _OnGroundFlag = false;
+    PlayerInput Inputs;
+    Vector2 Movement = Vector2.zero;
+    float DefaultLinearDrag;
+
+    // Bubble Variables
+    float BUBBLE_RADIUS_MIN = 0.75f;
+    float BUBBLE_RADIUS_INC = 0.4f;
+
+    #region Unity Events
 
     void Awake()
     {
@@ -37,7 +48,9 @@ public class PlayerController : MonoBehaviour
         ANIM = GO.GetComponent<Animator>();
         RB = GO.GetComponent<Rigidbody2D>();
         SR = GO.GetComponent<SpriteRenderer>();
+        BC = GO.GetComponent<BoxCollider2D>();
         DefaultLinearDrag = RB.drag;
+        Bubbles = new List<GameObject>();
 
         // Initialize Inputs
         Inputs = new PlayerInput();
@@ -45,14 +58,22 @@ public class PlayerController : MonoBehaviour
         Inputs.Player.Move.performed += ctx => Movement = ctx.ReadValue<Vector2>();
         Inputs.Player.Jump.performed += ctx => _JumpInputFlag = true;
         Inputs.Player.Dash.performed += ctx => _DashInputFlag = true;
+        Inputs.Player.CheatBubble.performed += ctx => AddBubble();
 
         // Set starting state
         ChangeState(PlayerState.Idle);
+
+    }
+
+    private void Start()
+    {
+        AddBubble();
     }
 
     private void Update()
     {
         OUTPUT_VELOCITY = RB.velocity;
+        UpdateBubblePositions();
     }
 
     void FixedUpdate()
@@ -61,7 +82,18 @@ public class PlayerController : MonoBehaviour
         if (_OnGroundFlag)
         {
             _OnGroundFlag = false;
-            if (RequestLand()) ChangeState(PlayerState.Idle);
+            if (RequestLand())
+            {
+                if (Bubbles.Count > 0)
+                {
+                    ChangeState(PlayerState.Idle);
+                }
+                else
+                {
+                    ChangeState(PlayerState.Dead);
+                }
+            }
+            
         }
 
         if (_JumpInputFlag)
@@ -96,9 +128,17 @@ public class PlayerController : MonoBehaviour
 
     }
 
-    #region HandleInputs
+    private void OnCollisionStay2D(Collision2D collision)
+    {
+        _OnGroundFlag = OnGround();
+    }
+
+    #endregion
+
+    #region Handle Requests
     private bool RequestJump()
     {
+        if (Bubbles.Count == 0) return false;
         switch (State)
         {
             case PlayerState.Idle:
@@ -120,7 +160,10 @@ public class PlayerController : MonoBehaviour
 
         // Do not allow neutral dashing, leads to unknown physics shenanigans
         if (DashMovement == Vector2.zero) return false;
-        
+
+        // Bubble required
+        if (Bubbles.Count == 0) return false;
+
         switch (State)
         {
             case PlayerState.Idle:
@@ -132,48 +175,6 @@ public class PlayerController : MonoBehaviour
             default:
                 return false;
         }
-    }
-
-    private void Dash(Vector2 DashMovement)
-    {
-
-        // Determine Dash Vector
-        Vector2 DashVector;
-        DashVector = DashMovement.normalized * DASH_VELOCITY;
-
-        Coroutine DashRoutine;
-        DashRoutine = StartCoroutine(DashScript(DashVector));
-    }
-
-    private IEnumerator DashScript(Vector2 DashVector)
-    {
-
-        // Determine Pulse Delay
-        float PulseTime = DASH_PULSE_FRAMES * Time.fixedDeltaTime;
-
-        // Time Pulse,
-        Time.timeScale = 0;
-        yield return new WaitForSecondsRealtime(PulseTime);
-
-        // Continue Time, Apply constant velocity, remove gravity for duration, temporarily disable drag
-        RB.drag = 0f;
-        Time.timeScale = 1;
-        SetXVelocityWithForce(DashVector.x);
-        SetYVelocityWithForce(DashVector.y);
-        Physics2D.gravity = Vector2.zero;
-        for (int i = 0; i < DASH_STUN_FRAMES; i++)
-        {
-            
-            yield return new WaitForFixedUpdate();
-        }
-
-        // Set state to falling, resume drag and gravity
-        Physics2D.gravity = new Vector2(0, -9.8f);
-        RB.drag = DefaultLinearDrag;
-        SetXVelocityWithForce(0);
-        SetYVelocityWithForce(0);
-        ChangeState(PlayerState.Falling);
-
     }
 
     private bool RequestLand()
@@ -201,6 +202,56 @@ public class PlayerController : MonoBehaviour
 
     #endregion
 
+    #region Dash Methods
+
+    private void Dash(Vector2 DashMovement)
+    {
+
+        // Pop a Bubble
+        PopBubble();
+
+        // Determine Dash Vector
+        Vector2 DashVector;
+        DashVector = DashMovement.normalized * DASH_VELOCITY;
+
+        Coroutine DashRoutine;
+        DashRoutine = StartCoroutine(DashScript(DashVector));
+    }
+
+    private IEnumerator DashScript(Vector2 DashVector)
+    {
+
+        // Determine Pulse Delay
+        float PulseTime = DASH_PULSE_FRAMES * Time.fixedDeltaTime;
+
+        // Time Pulse,
+        Time.timeScale = 0;
+        yield return new WaitForSecondsRealtime(PulseTime);
+
+        // Continue Time, Apply constant velocity, remove gravity for duration, temporarily disable drag
+        RB.drag = 0f;
+        Time.timeScale = 1;
+        SetXVelocityWithForce(DashVector.x);
+        SetYVelocityWithForce(DashVector.y);
+        Physics2D.gravity = Vector2.zero;
+        for (int i = 0; i < DASH_STUN_FRAMES; i++)
+        {
+
+            yield return new WaitForFixedUpdate();
+        }
+
+        // Set state to falling, resume drag and gravity
+        Physics2D.gravity = new Vector2(0, -9.8f);
+        RB.drag = DefaultLinearDrag;
+        SetXVelocityWithForce(0);
+        SetYVelocityWithForce(0);
+        ChangeState(PlayerState.Falling);
+
+    }
+
+    #endregion
+
+    #region Physics
 
     void SetXVelocityWithForce(float DesiredVelocity)
     {
@@ -213,19 +264,42 @@ public class PlayerController : MonoBehaviour
         RB.AddForce((new Vector2(0, DesiredVelocity) - new Vector2(0, RB.velocity.y)) / Time.fixedDeltaTime);
     }
 
+    #endregion
+
+    #region Bubble Methods
+
+    void AddBubble() {
+        Bubbles.Add(Instantiate(Resources.Load<GameObject>("Bubble")));
+        Bubble BubbleComponent = Bubbles[Bubbles.Count - 1].GetComponent<Bubble>();
+        BubbleComponent.SetRadius( BUBBLE_RADIUS_MIN + BUBBLE_RADIUS_INC * (Bubbles.Count - 1) );
+    }
+
+    void PopBubble()
+    {
+        Destroy(Bubbles[Bubbles.Count - 1].gameObject);
+        Bubbles.RemoveAt(Bubbles.Count - 1);
+    }
+
+    void UpdateBubblePositions()
+    {
+        if (Bubbles.Count == 0) return;
+        foreach(GameObject _Bubble in Bubbles)
+        {
+            _Bubble.transform.position = gameObject.transform.position + Vector3.up * 0.5f;
+        }
+    }
+
+    #endregion 
+
     void Jump()
     {
+        PopBubble();
         SetYVelocityWithForce(JUMP_SPEED);
         // ANIM.SetTrigger("JumpStartTrigger");
     }
 
     void Move()
     {
-        // Check for Move Invoked While Dashing
-        //if (State == PlayerState.Dashing)
-        //{
-            Debug.Log("Move invoked.");
-        //}
         if (State == PlayerState.Idle)
         {
             ChangeState(PlayerState.Run);
@@ -246,13 +320,59 @@ public class PlayerController : MonoBehaviour
     private void ChangeState(PlayerState _State)
     {
         State = _State;
-        Color[] Colors = { Color.cyan, Color.blue, Color.green, Color.red, Color.yellow};
-        // SR.color = Colors[(int)State];
+        Color[] Colors = { Color.cyan, Color.blue, Color.green, Color.red, Color.yellow, Color.white};
+        SR.color = Colors[(int)State];
     }
 
-    private void OnCollisionStay2D(Collision2D collision)
+    private bool OnGround()
     {
-        _OnGroundFlag = true;
+
+        RaycastHit2D[] _Hits;
+        float XScale = 0.5f;
+        Vector2 _Origin = gameObject.transform.position; // + (0.5f * XScale * Vector3.left);
+        Vector2 _Size = new Vector2(XScale, 0.1f);
+
+        _Hits = Physics2D.BoxCastAll(_Origin, _Size, 0f, Vector2.down, 0.2f);
+        Debug.Log("_Origin: " + _Origin + "; _Size: " + _Size);
+        Debug.DrawLine(_Origin, _Origin + new Vector2(_Size.x, -_Size.y), Color.red);
+
+        if (_Hits.Length == 0) return false;
+        else
+        {
+            for (int i = 0; i < _Hits.Length; i++)
+            {
+                if (_Hits[i].collider.gameObject.CompareTag("Wall"))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+
+    }
+
+    private bool OnWall()
+    {
+
+        RaycastHit2D[] _Hits;
+        float XScale = 0.5f;
+        Vector2 _Origin = gameObject.transform.position + (0.5f * Vector3.left);
+        Vector2 _Size = new Vector2(XScale, 0.2f);
+
+        _Hits = Physics2D.BoxCastAll(_Origin, _Size, 0f, Vector2.down);
+        if (_Hits.Length == 0) return false;
+        else
+        {
+            for (int i = 0; i < _Hits.Length; i++)
+            {
+                if (_Hits[i].collider.gameObject.CompareTag("Wall"))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+
     }
 
 }

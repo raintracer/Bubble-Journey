@@ -28,7 +28,7 @@ static public class GameAssets
 
         Materials = new Dictionary<string, UnityEngine.Material>
         {
-            //["SpriteDefault"] = Resources.Load<UnityEngine.Material>("Arena Grid"),
+            ["SpriteDefault"] = Resources.Load<GameObject>("Wall").GetComponent<SpriteRenderer>().sharedMaterial
         };
     }
 
@@ -41,6 +41,7 @@ static public class GameAssets
     public static class Material
     {
         // Example - public static UnityEngine.Material ArenaGrid { get => GetMaterial("Arena Grid"); }
+        public static UnityEngine.Material SpriteDefault { get => GetMaterial("SpriteDefault"); }
     }
 
     #endregion
@@ -138,27 +139,9 @@ static public class GameAssets
 
     #endregion
 
-    #region Glassheart Methods
+    #region Bubble Journey Methods
 
-    public static UnityEngine.Sprite GetSpriteByTileColor(BasicTile.TileColor _Color)
-    {
-        return _Color switch
-        {
-            BasicTile.TileColor.Red    => Sprite.TileRed,
-            BasicTile.TileColor.Yellow => Sprite.TileYellow,
-            BasicTile.TileColor.Green  => Sprite.TileGreen,
-            BasicTile.TileColor.Blue   => Sprite.TileBlue,
-            BasicTile.TileColor.Indigo => Sprite.TileIndigo,
-            BasicTile.TileColor.Purple => Sprite.TilePurple,
-            _ => Sprite.TileRed,
-        };
-    }
-
-    public static BasicTile.TileColor GetRandomTileColor()
-    {
-        return (BasicTile.TileColor) Random.Range((int)0, (int)6);
-    }
-
+   
     #endregion
 
 }
