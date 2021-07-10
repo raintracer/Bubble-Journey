@@ -75,10 +75,10 @@ static public class GameAssets
     {
         Sounds = new Dictionary<string, Sound>
         {
-            ["CursorClick"] = new Sound(GO.AddComponent<AudioSource>(), "CursorClick", 0.05f),
-            ["DefaultBust"] = new Sound(GO.AddComponent<AudioSource>(), "DefaultBust", 0.5f),
-            ["Swap"] = new Sound(GO.AddComponent<AudioSource>(), "Swap", 0.5f),
-            ["TileLand"] = new Sound(GO.AddComponent<AudioSource>(), "TileLand", 0.5f),
+            ["pop1"] = new Sound(GO.AddComponent<AudioSource>(), "pop1", 0.5f),
+            ["pop2"] = new Sound(GO.AddComponent<AudioSource>(), "pop2", 0.5f),
+            ["pop3"] = new Sound(GO.AddComponent<AudioSource>(), "pop3", 0.5f),
+            ["death"] = new Sound(GO.AddComponent<AudioSource>(), "death", 0.5f)
         };
     }
     public static Sound GetSound(string _SoundName)
@@ -91,10 +91,10 @@ static public class GameAssets
     {
 
         // EXPOSE SOUNDS FOR STRONG TYPING
-        public static Sound CursorClick { get => GetSound("CursorClick"); }
-        public static Sound DefaultBust { get => GetSound("DefaultBust"); }
-        public static Sound Swap { get => GetSound("Swap"); }
-        public static Sound TileLand { get => GetSound("TileLand"); }
+        public static Sound pop1 { get => GetSound("pop1"); }
+        public static Sound pop2 { get => GetSound("pop2"); }
+        public static Sound pop3 { get => GetSound("pop3"); }
+        public static Sound death { get => GetSound("death"); }
 
         private AudioSource Source;
         public string ClipName { get; private set; }

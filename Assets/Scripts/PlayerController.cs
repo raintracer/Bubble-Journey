@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerController : MonoBehaviour
 {
@@ -78,7 +79,7 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
-
+        
         if (_OnGroundFlag)
         {
             _OnGroundFlag = false;
@@ -91,9 +92,17 @@ public class PlayerController : MonoBehaviour
                 else
                 {
                     ChangeState(PlayerState.Dead);
+                    StartCoroutine(DeathAnimation());
                 }
             }
             
+        }
+
+        IEnumerator DeathAnimation() {
+            GameAssets.Sound.death.Play();
+            RB.simulated = false;
+            yield return new WaitForSeconds(3);
+            ReloadLevel();
         }
 
         if (_JumpInputFlag)
@@ -128,9 +137,25 @@ public class PlayerController : MonoBehaviour
 
     }
 
+    public void ReloadLevel()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
     private void OnCollisionStay2D(Collision2D collision)
     {
+        
+        // Check for Ground
         _OnGroundFlag = OnGround();
+
+    }
+
+    private void OnTriggerEnter2D(Collider2D _Collider)
+    {
+        if (_Collider.gameObject.CompareTag("Bubble"))
+        {
+            AttachBubble(_Collider.gameObject);
+        }
     }
 
     #endregion
@@ -192,11 +217,14 @@ public class PlayerController : MonoBehaviour
     {
         switch (State)
         {
-            case PlayerState.Dashing:
-                return false;
-            default:
-                Move();
+            case PlayerState.Idle:
+            case PlayerState.Run:
+            case PlayerState.Jumping:
+            case PlayerState.Falling:
+                Move(); 
                 return true;
+            default:
+                return false;
         }
     }
 
@@ -208,6 +236,7 @@ public class PlayerController : MonoBehaviour
     {
 
         // Pop a Bubble
+        GameAssets.Sound.pop2.Play();
         PopBubble();
 
         // Determine Dash Vector
@@ -269,14 +298,20 @@ public class PlayerController : MonoBehaviour
     #region Bubble Methods
 
     void AddBubble() {
-        Bubbles.Add(Instantiate(Resources.Load<GameObject>("Bubble")));
-        Bubble BubbleComponent = Bubbles[Bubbles.Count - 1].GetComponent<Bubble>();
-        BubbleComponent.SetRadius( BUBBLE_RADIUS_MIN + BUBBLE_RADIUS_INC * (Bubbles.Count - 1) );
+        AttachBubble(Instantiate(Resources.Load<GameObject>("Bubble"), transform.position, Quaternion.identity));
+    }
+
+    void AttachBubble(GameObject BubbleObject)
+    {
+        GameAssets.Sound.pop1.Play();
+        Bubbles.Add(BubbleObject);
+        Bubble BubbleComponent = BubbleObject.GetComponent<Bubble>();
+        BubbleComponent.AttachToPlayer(BUBBLE_RADIUS_MIN + BUBBLE_RADIUS_INC * (Bubbles.Count - 1));
     }
 
     void PopBubble()
     {
-        Destroy(Bubbles[Bubbles.Count - 1].gameObject);
+        Bubbles[Bubbles.Count - 1].GetComponent<Bubble>().UnattachFromPlayer();
         Bubbles.RemoveAt(Bubbles.Count - 1);
     }
 
@@ -293,6 +328,7 @@ public class PlayerController : MonoBehaviour
 
     void Jump()
     {
+        GameAssets.Sound.pop3.Play();
         PopBubble();
         SetYVelocityWithForce(JUMP_SPEED);
         // ANIM.SetTrigger("JumpStartTrigger");
@@ -333,9 +369,7 @@ public class PlayerController : MonoBehaviour
         Vector2 _Size = new Vector2(XScale, 0.1f);
 
         _Hits = Physics2D.BoxCastAll(_Origin, _Size, 0f, Vector2.down, 0.2f);
-        Debug.Log("_Origin: " + _Origin + "; _Size: " + _Size);
-        Debug.DrawLine(_Origin, _Origin + new Vector2(_Size.x, -_Size.y), Color.red);
-
+        
         if (_Hits.Length == 0) return false;
         else
         {
