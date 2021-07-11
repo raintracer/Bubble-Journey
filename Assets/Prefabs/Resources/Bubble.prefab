@@ -49,6 +49,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   radius: 1
   Free: 1
+  Type: 0
 --- !u!120 &5860508041936156456
 LineRenderer:
   m_ObjectHideFlags: 0
@@ -171,7 +172,7 @@ BoxCollider2D:
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 1, y: 1}
+  m_Size: {x: 0.5, y: 0.5}
   m_EdgeRadius: 0
 --- !u!212 &774359396
 SpriteRenderer:

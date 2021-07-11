@@ -2,11 +2,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using TMPro;
 
 public class PlayerController : MonoBehaviour
 {
 
-    public enum PlayerState { Idle, Run, Jumping, Falling, Dashing, Dead }
+    public enum PlayerState { Idle, Run, Jumping, Falling, Dashing, Dead, Spawning, Clearing }
 
     // Unity Component Handles
     GameObject GO;
@@ -26,6 +27,11 @@ public class PlayerController : MonoBehaviour
     [SerializeField] float DASH_VELOCITY;
     [SerializeField] Vector2 OUTPUT_VELOCITY;
     [SerializeField] PlayerState State;
+    [SerializeField] PlayerState StartState;
+
+    // Level Text
+    [SerializeField] string LevelText = "";
+    TextMeshPro PlayerText;
 
     // Player Input Variables
     bool _JumpInputFlag = false;
@@ -59,16 +65,59 @@ public class PlayerController : MonoBehaviour
         Inputs.Player.Move.performed += ctx => Movement = ctx.ReadValue<Vector2>();
         Inputs.Player.Jump.performed += ctx => _JumpInputFlag = true;
         Inputs.Player.Dash.performed += ctx => _DashInputFlag = true;
-        Inputs.Player.CheatBubble.performed += ctx => AddBubble();
+        Inputs.Player.CheatBubble.performed += ctx => AddBubble(Bubble.BubbleType.Jump);
 
         // Set starting state
-        ChangeState(PlayerState.Idle);
+        Spawn();
 
     }
 
     private void Start()
     {
-        // AddBubble();
+    }
+
+    private void Spawn()
+    {
+        ChangeState(PlayerState.Spawning);
+        Physics2D.gravity = new Vector2(0f, -9.8f);
+        StartCoroutine(SpawnAnimation());
+    }
+
+    private IEnumerator SpawnAnimation()
+    {
+
+        RB.simulated = false;
+        ChangeState(PlayerState.Spawning);
+
+        // Fly up from bottom of screen
+        SR.material = GameAssets.Material.Offset;
+        Vector2 StartOffset = new Vector2(-0.02f, -0.29f);
+        Vector2 MidOffset = new Vector2(-0.02f, 0.04f);
+        Vector2 EndOffset = new Vector2(-0.02f, 0f);
+        Vector2 CurrentOffset = StartOffset;
+
+        Vector3 VelocityRef = Vector3.zero;
+        while ((CurrentOffset - MidOffset).SqrMagnitude() < 0.1f) {
+            CurrentOffset = Vector3.SmoothDamp(CurrentOffset, MidOffset, ref VelocityRef, 2f);
+            SR.material.SetVector("_Offset", CurrentOffset);
+            yield return null;
+        }
+
+        while (CurrentOffset != EndOffset)
+        {
+            CurrentOffset = Vector3.SmoothDamp(CurrentOffset, EndOffset, ref VelocityRef, 0.1f);
+            SR.material.SetVector("_Offset", CurrentOffset);
+            yield return null;
+        }
+
+        SR.material = GameAssets.Material.SpriteDefault;
+        RB.simulated = true;
+        ChangeState(StartState);
+
+        // Set-Up Level Text
+        PlayerText = GameObject.Find("PlayerText").GetComponent<TextMeshPro>();
+        PlayerText.text = LevelText;
+
     }
 
     private void Update()
@@ -77,32 +126,23 @@ public class PlayerController : MonoBehaviour
         UpdateBubblePositions();
     }
 
+    IEnumerator DeathAnimation()
+    {
+        GameAssets.Sound.death.Play();
+        RB.simulated = false;
+        yield return new WaitForSeconds(1);
+        ReloadLevel();
+    }
+
     void FixedUpdate()
     {
-        
+
+        if (State == PlayerState.Spawning || State == PlayerState.Clearing) return;
+
         if (_OnGroundFlag)
         {
-            _OnGroundFlag = false;
-            if (RequestLand())
-            {
-                if (Bubbles.Count > 0)
-                {
-                    ChangeState(PlayerState.Idle);
-                }
-                else
-                {
-                    ChangeState(PlayerState.Dead);
-                    StartCoroutine(DeathAnimation());
-                }
-            }
-            
-        }
-
-        IEnumerator DeathAnimation() {
-            GameAssets.Sound.death.Play();
-            RB.simulated = false;
-            yield return new WaitForSeconds(3);
-            ReloadLevel();
+            _OnGroundFlag = false; 
+            RequestLand();
         }
 
         if (_JumpInputFlag)
@@ -130,13 +170,44 @@ public class PlayerController : MonoBehaviour
             if (State == PlayerState.Run) ChangeState(PlayerState.Idle);
         }
 
-        if (State == PlayerState.Jumping)
+        if (State == PlayerState.Jumping || State == PlayerState.Run || State == PlayerState.Idle)
         {
-            if (RB.velocity.y < 0) ChangeState(PlayerState.Falling);
+            if (RB.velocity.y < -1f)
+            {
+                Debug.Log(RB.velocity.y);
+                ChangeState(PlayerState.Falling);
+            }
         }
 
     }
 
+    private void Land()
+    {
+        if (Bubbles.Count > 0)
+        {
+            if (GetOuterBubbleType() == Bubble.BubbleType.Land)
+            {
+                PopBubble();
+            }
+        }
+
+        if (Bubbles.Count > 0)
+        {
+            ChangeState(PlayerState.Idle);
+        }
+        else
+        {
+            ChangeState(PlayerState.Dead);
+            StartCoroutine(DeathAnimation());
+        }
+    }
+
+    private Bubble.BubbleType? GetBubbleTypeByObject(GameObject _BubbleObject)
+    {
+        if (Bubbles.Count == 0) return null;
+        Bubble BubbleComponent = _BubbleObject.GetComponent<Bubble>();
+        return BubbleComponent.Type;
+    }
     public void ReloadLevel()
     {
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
@@ -207,6 +278,7 @@ public class PlayerController : MonoBehaviour
         switch (State)
         {
             case PlayerState.Falling:
+                Land();
                 return true;
             default:
                 return false;
@@ -274,7 +346,7 @@ public class PlayerController : MonoBehaviour
         RB.drag = DefaultLinearDrag;
         SetXVelocityWithForce(0);
         SetYVelocityWithForce(0);
-        ChangeState(PlayerState.Falling);
+        ChangeState(PlayerState.Idle);
 
     }
 
@@ -297,8 +369,9 @@ public class PlayerController : MonoBehaviour
 
     #region Bubble Methods
 
-    void AddBubble() {
+    void AddBubble(Bubble.BubbleType _BubbleType) {
         AttachBubble(Instantiate(Resources.Load<GameObject>("Bubble"), transform.position, Quaternion.identity));
+        Bubbles[Bubbles.Count - 1].GetComponent<Bubble>().SetBubbleType(_BubbleType);
     }
 
     void AttachBubble(GameObject BubbleObject)
@@ -307,12 +380,62 @@ public class PlayerController : MonoBehaviour
         Bubbles.Add(BubbleObject);
         Bubble BubbleComponent = BubbleObject.GetComponent<Bubble>();
         BubbleComponent.AttachToPlayer(BUBBLE_RADIUS_MIN + BUBBLE_RADIUS_INC * (Bubbles.Count - 1));
+        if (BubbleComponent.Type == Bubble.BubbleType.Win)
+        {
+            Win();
+        }
     }
 
+    void Win()
+    {
+        ChangeState(PlayerState.Clearing);
+        StartCoroutine(WinAnimation());
+    }
+
+    void LoadNextLevel()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
+    }
+
+    private IEnumerator WinAnimation()
+    {
+
+        RB.simulated = false;
+        ChangeState(PlayerState.Clearing);
+
+        // Some delay
+        yield return new WaitForSeconds(0.1f);
+
+        // Fly up the screen
+        SR.material = GameAssets.Material.Offset;
+        Vector2 StartOffset = new Vector2(-0.02f, 0f);
+        Vector2 EndOffset = new Vector2(-0.02f, 0.6f);
+        Vector2 CurrentOffset = StartOffset;
+
+        Vector3 VelocityRef = Vector3.zero;
+        while (CurrentOffset != EndOffset)
+        {
+            CurrentOffset = Vector3.SmoothDamp(CurrentOffset, EndOffset, ref VelocityRef, 0.12f);
+            SR.material.SetVector("_Offset", CurrentOffset);
+            yield return null;
+        }
+
+        LoadNextLevel();
+        yield return null;
+
+    }
+
+    void DestroyBubble()
+    {
+        GameObject BubbleObject = Bubbles[Bubbles.Count - 1];
+        PopBubble();
+        Destroy(BubbleObject);
+    }
     void PopBubble()
     {
         Bubbles[Bubbles.Count - 1].GetComponent<Bubble>().UnattachFromPlayer();
         Bubbles.RemoveAt(Bubbles.Count - 1);
+        GameAssets.Sound.pop3.Play();
     }
 
     void UpdateBubblePositions()
@@ -328,9 +451,12 @@ public class PlayerController : MonoBehaviour
 
     void Jump()
     {
-        GameAssets.Sound.pop3.Play();
-        PopBubble();
+        
+        if (GetOuterBubbleType() == Bubble.BubbleType.Jump) PopBubble();
+
+        RB.velocity = new Vector2(RB.velocity.x, 0f);
         SetYVelocityWithForce(JUMP_SPEED);
+
         // ANIM.SetTrigger("JumpStartTrigger");
     }
 
@@ -355,11 +481,17 @@ public class PlayerController : MonoBehaviour
 
     private void ChangeState(PlayerState _State)
     {
+        _OnGroundFlag = false;
         State = _State;
-        Color[] Colors = { Color.cyan, Color.blue, Color.green, Color.red, Color.yellow, Color.white};
+        Color[] Colors = { Color.cyan, Color.blue, Color.green, Color.red, Color.yellow, Color.white, Color.magenta, Color.magenta };
         SR.color = Colors[(int)State];
     }
-
+    
+    private Bubble.BubbleType? GetOuterBubbleType()
+    {
+        if (Bubbles.Count == 0) return null;
+        return GetBubbleTypeByObject(Bubbles[Bubbles.Count - 1]);
+    }
     private bool OnGround()
     {
 

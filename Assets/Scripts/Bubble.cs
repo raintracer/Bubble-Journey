@@ -20,7 +20,7 @@ public class Bubble : MonoBehaviour
     const int UNATTACH_DELAY_FRAMES = 10;
 
     public enum BubbleType { Jump, Land, Dash, Bounce, Win}
-    [SerializeField] BubbleType Type = BubbleType.Jump;
+    [SerializeField] public BubbleType Type = BubbleType.Jump;
 
     static Color[] ActiveColors = { Color.cyan, Color.red, Color.yellow, Color.green, Color.magenta };
 

@@ -28,7 +28,8 @@ static public class GameAssets
 
         Materials = new Dictionary<string, UnityEngine.Material>
         {
-            ["SpriteDefault"] = Resources.Load<GameObject>("Wall").GetComponent<SpriteRenderer>().sharedMaterial
+            ["SpriteDefault"] = Resources.Load<UnityEngine.Material>("Default"),
+            ["Offset"] = Resources.Load<UnityEngine.Material>("Offset"),
         };
     }
 
@@ -42,6 +43,8 @@ static public class GameAssets
     {
         // Example - public static UnityEngine.Material ArenaGrid { get => GetMaterial("Arena Grid"); }
         public static UnityEngine.Material SpriteDefault { get => GetMaterial("SpriteDefault"); }
+
+        public static UnityEngine.Material Offset { get => GetMaterial("Offset"); }
     }
 
     #endregion
@@ -78,7 +81,10 @@ static public class GameAssets
             ["pop1"] = new Sound(GO.AddComponent<AudioSource>(), "pop1", 0.5f),
             ["pop2"] = new Sound(GO.AddComponent<AudioSource>(), "pop2", 0.5f),
             ["pop3"] = new Sound(GO.AddComponent<AudioSource>(), "pop3", 0.5f),
-            ["death"] = new Sound(GO.AddComponent<AudioSource>(), "death", 0.5f)
+            ["death"] = new Sound(GO.AddComponent<AudioSource>(), "death", 0.5f),
+            ["MenuMusic"] = new Sound(GO.AddComponent<AudioSource>(), "MenuMusic", 0.5f),
+            ["PlaySound"] = new Sound(GO.AddComponent<AudioSource>(), "PlaySound", 0.5f),
+            ["Song1"] = new Sound(GO.AddComponent<AudioSource>(), "Song1", 0.5f, true)
         };
     }
     public static Sound GetSound(string _SoundName)
@@ -95,6 +101,9 @@ static public class GameAssets
         public static Sound pop2 { get => GetSound("pop2"); }
         public static Sound pop3 { get => GetSound("pop3"); }
         public static Sound death { get => GetSound("death"); }
+        public static Sound MenuMusic { get => GetSound("MenuMusic"); }
+        public static Sound PlaySound { get => GetSound("PlaySound"); }
+        public static Sound Song1 { get => GetSound("Song1"); }
 
         private AudioSource Source;
         public string ClipName { get; private set; }
