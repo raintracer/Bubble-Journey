@@ -8,13 +8,12 @@ public class Bubble : MonoBehaviour
     private GameObject GO;
     private BoxCollider2D BC;
     private LineRenderer LR;
-    private const int SEGMENT_COUNT = 200;
+    private const int SEGMENT_COUNT = 100;
     private float Thickness = 0.05f;
     public float radius;
     [SerializeField] public bool Free = true;
     Color ActiveColor;
     Vector2 SpawnPoint;
-    bool _Respawning = false;
     const float RADIUS_FREE = 0.5f;
     const int UNATTACH_TRAVEL_FRAMES = 20;
     const int UNATTACH_DELAY_FRAMES = 10;
@@ -38,7 +37,6 @@ public class Bubble : MonoBehaviour
         LR.startColor = ActiveColor;
         LR.endColor = ActiveColor;
 
-        LR.material = GameAssets.Material.SpriteDefault;
         LR.startWidth = Thickness;
         LR.endWidth = Thickness;
         LR.numCornerVertices = 5;
@@ -93,6 +91,11 @@ public class Bubble : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        LR.material.mainTextureOffset += Time.deltaTime * Vector2.up;
+        
+    }
     public void AttachToPlayer(float _Radius)
     {
         SetRadius(_Radius);

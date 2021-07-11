@@ -31,7 +31,7 @@ public class PlayerController : MonoBehaviour
 
     // Level Text
     [SerializeField] string LevelText = "";
-    TextMeshPro PlayerText;
+    TextMeshProUGUI PlayerText;
 
     // Player Input Variables
     bool _JumpInputFlag = false;
@@ -115,7 +115,7 @@ public class PlayerController : MonoBehaviour
         ChangeState(StartState);
 
         // Set-Up Level Text
-        PlayerText = GameObject.Find("PlayerText").GetComponent<TextMeshPro>();
+        PlayerText = GameObject.Find("PlayerText").GetComponent<TextMeshProUGUI>();
         PlayerText.text = LevelText;
 
     }
@@ -174,7 +174,6 @@ public class PlayerController : MonoBehaviour
         {
             if (RB.velocity.y < -1f)
             {
-                Debug.Log(RB.velocity.y);
                 ChangeState(PlayerState.Falling);
             }
         }
@@ -500,7 +499,7 @@ public class PlayerController : MonoBehaviour
         Vector2 _Origin = gameObject.transform.position; // + (0.5f * XScale * Vector3.left);
         Vector2 _Size = new Vector2(XScale, 0.1f);
 
-        _Hits = Physics2D.BoxCastAll(_Origin, _Size, 0f, Vector2.down, 0.2f);
+        _Hits = Physics2D.BoxCastAll(_Origin, _Size, 0f, Vector2.down, 0.01f);
         
         if (_Hits.Length == 0) return false;
         else

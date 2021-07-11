@@ -33,15 +33,30 @@ EditorBuildSettings:
     path: Assets/Scenes/1-10.unity
     guid: b8f05087bb5d72245bf1cc78502d3e5d
   - enabled: 1
-    path: Assets/Scenes/1-11.unity
-    guid: 9df31028d1bd87244b9b50cb8ce404ea
-  - enabled: 1
     path: Assets/Scenes/2-1.unity
-    guid: dca172769192021458f92fa13c9e87fd
+    guid: 91dcb6a4e76623347b984966dbfcbbd1
   - enabled: 1
     path: Assets/Scenes/2-2.unity
     guid: b28fe061ff5b46341ad1c7c89e620f31
   - enabled: 1
     path: Assets/Scenes/2-3.unity
-    guid: c86fd4c27d1e6ad42b9efb5060ca1fc8
+    guid: cb9de040d2616ec49bcf93b451368c7b
+  - enabled: 1
+    path: Assets/Scenes/2-4.unity
+    guid: b86e189ff90b1be4baed3d06833ea463
+  - enabled: 1
+    path: Assets/Scenes/2-5.unity
+    guid: 395daf1074143e445bb8b90e84c2a881
+  - enabled: 1
+    path: Assets/Scenes/2-6.unity
+    guid: 1035b4130303afb4ea9d0e7216a0f000
+  - enabled: 1
+    path: Assets/Scenes/2-7.unity
+    guid: 57c205d8a46a92748b9c4fdc31a64be4
+  - enabled: 1
+    path: Assets/Scenes/2-8.unity
+    guid: 97fcccac25cb66d42bd33b28b32ee2c8
+  - enabled: 1
+    path: Assets/Scenes/5-1.unity
+    guid: dca172769192021458f92fa13c9e87fd
   m_configObjects: {}
