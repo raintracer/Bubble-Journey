@@ -188,6 +188,10 @@ public class PlayerController : MonoBehaviour
             {
                 PopBubble();
             }
+            else
+            {
+                MiniBurstEffect();
+            }
         }
 
         if (Bubbles.Count > 0)
@@ -388,6 +392,7 @@ public class PlayerController : MonoBehaviour
     void Win()
     {
         ChangeState(PlayerState.Clearing);
+        PopBubble();
         StartCoroutine(WinAnimation());
     }
 
@@ -432,9 +437,61 @@ public class PlayerController : MonoBehaviour
     }
     void PopBubble()
     {
+
+        // Make Bubble Effect
+        AddBurstEffect(Bubbles[Bubbles.Count - 1]);
+
+        // Remove Bubble from Player
         Bubbles[Bubbles.Count - 1].GetComponent<Bubble>().UnattachFromPlayer();
         Bubbles.RemoveAt(Bubbles.Count - 1);
         GameAssets.Sound.pop3.Play();
+
+    }
+
+    public void AddBurstEffect(GameObject _BubbleObject)
+    {
+
+        Bubble _BubbleComponent = _BubbleObject.GetComponent<Bubble>();
+        Vector2 ParticlePositionFloat = transform.position + new Vector3(0f, 0.5f, 0f); 
+
+        GameObject ParticleControllerObject = Instantiate(Resources.Load<GameObject>("ParticleController"));
+
+        if (ParticleControllerObject == null)
+        {
+            Debug.LogError("Particle Object Resource Not Found.");
+        }
+
+        ParticleControllerObject.GetComponent<ParticleController>().StartParticle("BubbleBurst", ParticlePositionFloat, 1f);
+
+        GameObject ParticleObject = ParticleControllerObject.GetComponent<ParticleController>().ParticleObject;
+
+        ParticleSystem.MainModule ParticleSetting = ParticleObject.GetComponent<ParticleSystem>().main;
+        ParticleSetting.startColor = new ParticleSystem.MinMaxGradient(_BubbleComponent.ActiveColor);
+
+    }
+
+    public void MiniBurstEffect()
+    {
+
+        GameObject _BubbleObject = Bubbles[Bubbles.Count - 1];
+        Bubble _BubbleComponent = _BubbleObject.GetComponent<Bubble>();
+        Vector2 ParticlePositionFloat = transform.position + new Vector3(0f, 0f, 0f);
+
+        GameObject ParticleControllerObject = Instantiate(Resources.Load<GameObject>("ParticleController"));
+
+        if (ParticleControllerObject == null)
+        {
+            Debug.LogError("Particle Object Resource Not Found.");
+        }
+
+        ParticleControllerObject.GetComponent<ParticleController>().StartParticle("BubbleBurst", ParticlePositionFloat, 1f);
+
+        GameObject ParticleObject = ParticleControllerObject.GetComponent<ParticleController>().ParticleObject;
+
+        ParticleObject.transform.localScale /= 3f;
+        ParticleSystem.MainModule ParticleSetting = ParticleObject.GetComponent<ParticleSystem>().main;
+        ParticleSetting.startColor = new ParticleSystem.MinMaxGradient(_BubbleComponent.ActiveColor);
+
     }
 
     void UpdateBubblePositions()
@@ -450,8 +507,15 @@ public class PlayerController : MonoBehaviour
 
     void Jump()
     {
-        
-        if (GetOuterBubbleType() == Bubble.BubbleType.Jump) PopBubble();
+
+        if (GetOuterBubbleType() == Bubble.BubbleType.Jump)
+        {
+            PopBubble();
+        }
+        else
+        {
+            MiniBurstEffect();
+        }
 
         RB.velocity = new Vector2(RB.velocity.x, 0f);
         SetYVelocityWithForce(JUMP_SPEED);

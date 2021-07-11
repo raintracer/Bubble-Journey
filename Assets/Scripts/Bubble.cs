@@ -12,7 +12,7 @@ public class Bubble : MonoBehaviour
     private float Thickness = 0.05f;
     public float radius;
     [SerializeField] public bool Free = true;
-    Color ActiveColor;
+    public Color ActiveColor { get; private set; }
     Vector2 SpawnPoint;
     const float RADIUS_FREE = 0.5f;
     const int UNATTACH_TRAVEL_FRAMES = 20;

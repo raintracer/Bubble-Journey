@@ -418,7 +418,6 @@ GameObject:
   - component: {fileID: 696766606}
   - component: {fileID: 696766607}
   - component: {fileID: 696766610}
-  - component: {fileID: -6131704010535749454}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -580,15 +579,3 @@ MonoBehaviour:
   State: 0
   StartState: 0
   LevelText: 
---- !u!114 &-6131704010535749454
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8731997188707898799}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d5983280f91818d4793add1a52a5823e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
