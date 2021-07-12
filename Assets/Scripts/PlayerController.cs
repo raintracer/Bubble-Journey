@@ -13,7 +13,6 @@ public class PlayerController : MonoBehaviour
     GameObject GO;
     Rigidbody2D RB;
     SpriteRenderer SR;
-    Animator ANIM;
     BoxCollider2D BC;
 
     // Bubble Parameters
@@ -52,7 +51,6 @@ public class PlayerController : MonoBehaviour
         
         // Capture Object Components
         GO = GameObject.Find("PlayerObject");
-        ANIM = GO.GetComponent<Animator>();
         RB = GO.GetComponent<Rigidbody2D>();
         SR = GO.GetComponent<SpriteRenderer>();
         BC = GO.GetComponent<BoxCollider2D>();

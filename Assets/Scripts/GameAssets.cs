@@ -84,7 +84,8 @@ static public class GameAssets
             ["death"] = new Sound(GO.AddComponent<AudioSource>(), "death", 0.5f),
             ["MenuMusic"] = new Sound(GO.AddComponent<AudioSource>(), "MenuMusic", 0.5f),
             ["PlaySound"] = new Sound(GO.AddComponent<AudioSource>(), "PlaySound", 0.5f),
-            ["Song1"] = new Sound(GO.AddComponent<AudioSource>(), "Song1", 0.5f, true)
+            ["Song1"] = new Sound(GO.AddComponent<AudioSource>(), "Song1", 0.5f, true),
+            ["CreditMusic"] = new Sound(GO.AddComponent<AudioSource>(), "CreditMusic", 0.5f, true)
         };
     }
     public static Sound GetSound(string _SoundName)
@@ -104,6 +105,8 @@ static public class GameAssets
         public static Sound MenuMusic { get => GetSound("MenuMusic"); }
         public static Sound PlaySound { get => GetSound("PlaySound"); }
         public static Sound Song1 { get => GetSound("Song1"); }
+
+        public static Sound CreditMusic { get => GetSound("CreditMusic"); }
 
         private AudioSource Source;
         public string ClipName { get; private set; }
