@@ -235,13 +235,22 @@ public class PlayerController : MonoBehaviour
     #region Handle Requests
     private bool RequestJump()
     {
-        if (Bubbles.Count == 0) return false;
+        
         switch (State)
         {
             case PlayerState.Idle:
             case PlayerState.Run:
-                Jump();
-                return true;
+                if (Bubbles.Count == 0)
+                {
+                    ChangeState(PlayerState.Dead);
+                    StartCoroutine(DeathAnimation());
+                    return false;
+                }
+                {
+                    Jump();
+                    return true;
+                }
+                
             default:
                 return false;
         }
