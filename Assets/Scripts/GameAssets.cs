@@ -78,14 +78,14 @@ static public class GameAssets
     {
         Sounds = new Dictionary<string, Sound>
         {
-            ["pop1"] = new Sound(GO.AddComponent<AudioSource>(), "pop1", 0.5f),
-            ["pop2"] = new Sound(GO.AddComponent<AudioSource>(), "pop2", 0.5f),
-            ["pop3"] = new Sound(GO.AddComponent<AudioSource>(), "pop3", 0.5f),
-            ["death"] = new Sound(GO.AddComponent<AudioSource>(), "death", 0.5f),
-            ["MenuMusic"] = new Sound(GO.AddComponent<AudioSource>(), "MenuMusic", 0.5f),
+            ["pop1"] = new Sound(GO.AddComponent<AudioSource>(), "pop1", 1f),
+            ["pop2"] = new Sound(GO.AddComponent<AudioSource>(), "pop2", 1f),
+            ["pop3"] = new Sound(GO.AddComponent<AudioSource>(), "pop3", 1f),
+            ["death"] = new Sound(GO.AddComponent<AudioSource>(), "death", 1f),
+            ["MenuMusic"] = new Sound(GO.AddComponent<AudioSource>(), "MenuMusic", 1f),
             ["PlaySound"] = new Sound(GO.AddComponent<AudioSource>(), "PlaySound", 0.5f),
-            ["Song1"] = new Sound(GO.AddComponent<AudioSource>(), "Song1", 0.5f, true),
-            ["CreditMusic"] = new Sound(GO.AddComponent<AudioSource>(), "CreditMusic", 0.5f, true)
+            ["Song1"] = new Sound(GO.AddComponent<AudioSource>(), "Song1", 1f, true),
+            ["CreditMusic"] = new Sound(GO.AddComponent<AudioSource>(), "CreditMusic", 1f, true)
         };
     }
     public static Sound GetSound(string _SoundName)
@@ -153,6 +153,17 @@ static public class GameAssets
 
     #region Bubble Journey Methods
 
+    public static string FormatTimeInMS(float MS)
+    {
+        // Timer
+
+        int Minutes = (int)(MS / 60000f);
+        int Seconds = (int)((MS % 60000) / 1000);
+        int Milliseconds = (int)(MS % 1000);
+        return System.String.Format("{0:00}:{1:00}:{2:00}", Minutes, Seconds, Milliseconds / 10);
+        
+
+    }
    
     #endregion
 
