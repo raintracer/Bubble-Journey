@@ -31,11 +31,13 @@ public class PlayerController : MonoBehaviour
     // Level Text
     [SerializeField] string LevelText = "";
     TextMeshProUGUI PlayerText;
+    bool LevelSkipped = false;
 
     // Player Input Variables
     bool _JumpInputFlag = false;
     bool _DashInputFlag = false;
     bool _OnGroundFlag = false;
+    bool _SkipFlag = false;
     PlayerInput Inputs;
     Vector2 Movement = Vector2.zero;
     float DefaultLinearDrag;
@@ -64,6 +66,7 @@ public class PlayerController : MonoBehaviour
         Inputs.Player.Jump.performed += ctx => _JumpInputFlag = true;
         Inputs.Player.Dash.performed += ctx => _DashInputFlag = true;
         Inputs.Player.CheatBubble.performed += ctx => AddBubble(Bubble.BubbleType.Jump);
+        Inputs.Player.Skip.performed += ctx => _SkipFlag = true;
 
         // Set starting state
         Spawn();
@@ -153,6 +156,12 @@ public class PlayerController : MonoBehaviour
         {
             _DashInputFlag = false;
             if(RequestDash()) ChangeState(PlayerState.Dashing);
+        }
+
+        if (_SkipFlag)
+        {
+            if (GameObject.Find("TimerObject") != null) GameObject.Find("TimerObject").GetComponent<TimeController>().HideTimer();
+            AddBubble(Bubble.BubbleType.Win);
         }
 
         if (Movement.x != 0)
@@ -381,7 +390,6 @@ public class PlayerController : MonoBehaviour
 
     void AddBubble(Bubble.BubbleType _BubbleType) {
         AttachBubble(Instantiate(Resources.Load<GameObject>("Bubble"), transform.position, Quaternion.identity));
-        Bubbles[Bubbles.Count - 1].GetComponent<Bubble>().SetBubbleType(_BubbleType);
     }
 
     void AttachBubble(GameObject BubbleObject)
