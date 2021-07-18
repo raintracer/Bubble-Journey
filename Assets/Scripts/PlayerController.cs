@@ -35,6 +35,7 @@ public class PlayerController : MonoBehaviour
 
     // Player Input Variables
     bool _JumpInputFlag = false;
+    bool _HoldingJumpFlag = false;
     bool _DashInputFlag = false;
     bool _OnGroundFlag = false;
     bool _SkipFlag = false;
@@ -63,7 +64,8 @@ public class PlayerController : MonoBehaviour
         Inputs = new PlayerInput();
         Inputs.Enable();
         Inputs.Player.Move.performed += ctx => Movement = ctx.ReadValue<Vector2>();
-        Inputs.Player.Jump.performed += ctx => _JumpInputFlag = true;
+        Inputs.Player.Jump.performed += ctx => { _JumpInputFlag = true; _HoldingJumpFlag = true; };
+        Inputs.Player.Jump.canceled += ctx => _HoldingJumpFlag = false;
         Inputs.Player.Dash.performed += ctx => _DashInputFlag = true;
         Inputs.Player.CheatBubble.performed += ctx => AddBubble(Bubble.BubbleType.Jump);
         Inputs.Player.Skip.performed += ctx => _SkipFlag = true;
@@ -189,11 +191,40 @@ public class PlayerController : MonoBehaviour
 
     private void Land()
     {
+
         if (Bubbles.Count > 0)
         {
             if (GetOuterBubbleType() == Bubble.BubbleType.Land)
             {
                 PopBubble();
+            }
+            else if (GetOuterBubbleType() == Bubble.BubbleType.Bounce)
+            {
+                float JumpBoost = 0f;
+                if (_HoldingJumpFlag)
+                {
+                    while (Bubbles.Count > 0)
+                    {
+                        if (GetOuterBubbleType() == Bubble.BubbleType.Bounce)
+                        {
+                            PopBubble();
+                            JumpBoost += .30f;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    PopBubble();
+                    JumpBoost = .30f;
+                }
+                
+                Jump(1 + JumpBoost);
+                ChangeState(PlayerState.Jumping);
+                return;
             }
             else
             {
@@ -210,6 +241,8 @@ public class PlayerController : MonoBehaviour
             ChangeState(PlayerState.Dead);
             StartCoroutine(DeathAnimation());
         }
+
+
     }
 
     private Bubble.BubbleType? GetBubbleTypeByObject(GameObject _BubbleObject)
@@ -227,7 +260,7 @@ public class PlayerController : MonoBehaviour
     {
         
         // Check for Ground
-        _OnGroundFlag = OnGround();
+        _OnGroundFlag = OnGround(collision);
 
     }
 
@@ -276,8 +309,9 @@ public class PlayerController : MonoBehaviour
         // Do not allow neutral dashing, leads to unknown physics shenanigans
         if (DashMovement == Vector2.zero) return false;
 
-        // Bubble required
+        // Non-Green Bubble required
         if (Bubbles.Count == 0) return false;
+        if (GetOuterBubbleType() == Bubble.BubbleType.Bounce) return false;
 
         switch (State)
         {
@@ -520,23 +554,29 @@ public class PlayerController : MonoBehaviour
 
     #endregion 
 
-    void Jump()
+    void Jump (float _JumpBoost = 1f)
     {
 
-        if (GetOuterBubbleType() == Bubble.BubbleType.Jump)
+        if (Bubbles.Count > 0)
         {
-            PopBubble();
+            if (GetOuterBubbleType() == Bubble.BubbleType.Jump)
+            {
+                PopBubble();
+            }
+            else
+            {
+                MiniBurstEffect();
+            }
         }
-        else
-        {
-            MiniBurstEffect();
-        }
+        
 
         RB.velocity = new Vector2(RB.velocity.x, 0f);
-        SetYVelocityWithForce(JUMP_SPEED);
+        SetYVelocityWithForce(JUMP_SPEED * _JumpBoost);
 
         // ANIM.SetTrigger("JumpStartTrigger");
     }
+
+
 
     void Move()
     {
@@ -570,11 +610,12 @@ public class PlayerController : MonoBehaviour
         if (Bubbles.Count == 0) return null;
         return GetBubbleTypeByObject(Bubbles[Bubbles.Count - 1]);
     }
-    private bool OnGround()
+
+    private bool OnGround(Collision2D collision)
     {
 
         RaycastHit2D[] _Hits;
-        float XScale = 0.5f;
+        float XScale = .95f;
         Vector2 _Origin = gameObject.transform.position; // + (0.5f * XScale * Vector3.left);
         Vector2 _Size = new Vector2(XScale, 0.1f);
 
@@ -585,7 +626,7 @@ public class PlayerController : MonoBehaviour
         {
             for (int i = 0; i < _Hits.Length; i++)
             {
-                if (_Hits[i].collider.gameObject.CompareTag("Wall"))
+                if (_Hits[i].collider.gameObject.name == collision.gameObject.name && _Hits[i].collider.gameObject.CompareTag("Wall"))
                 {
                     return true;
                 }
